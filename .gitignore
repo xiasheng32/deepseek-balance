@@ -1,0 +1,17 @@
+# 依赖
+node_modules/
+*.tgz
+
+# 环境变量 / 密钥
+.env
+.env.*
+!.env.example
+*.local
+auth.json
+.pi/
+
+# 系统与日志
+.DS_Store
+._*
+*.log
+npm-debug.log*

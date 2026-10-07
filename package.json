@@ -1,0 +1,46 @@
+{
+  "name": "deepseek-balance",
+  "version": "0.1.0",
+  "description": "Pi extension: 在页脚状态栏显示 DeepSeek 账户余额，并提供 /deepseek-balance 详情面板命令。",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "deepseek",
+    "balance"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xiasheng32/deepseek-balance.git"
+  },
+  "homepage": "https://github.com/xiasheng32/deepseek-balance#readme",
+  "bugs": {
+    "url": "https://github.com/xiasheng32/deepseek-balance/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "files": [
+    "extensions/deepseek-balance.ts",
+    "src/balance.ts",
+    "scripts/sync-autoload.mjs",
+    "tests/deepseek-balance.test.mjs",
+    ".env.example",
+    "README.md",
+    "LICENSE"
+  ],
+  "pi": {
+    "extensions": [
+      "./extensions/deepseek-balance.ts"
+    ]
+  },
+  "scripts": {
+    "test": "node --test tests/deepseek-balance.test.mjs",
+    "sync-autoload": "node scripts/sync-autoload.mjs"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  }
+}
