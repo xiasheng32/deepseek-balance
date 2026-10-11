@@ -2,6 +2,13 @@
 
 > 一个 [pi](https://pi.dev) 扩展：在页脚状态栏实时显示 DeepSeek 账户余额，并提供 `/deepseek-balance` 命令查看详情面板。
 
+## v0.1.1 更新
+
+- 自维护代码统一为 TypeScript：测试和同步脚本使用 Node 原生运行，不引入额外 TS 运行器或编译产物。
+- 新增严格类型检查 `npm run typecheck`、综合验证 `npm run check` 及开发依赖锁定。
+- 保留原有 26 项用例，新增 2 项临时目录中的同步脚本测试，共 28 项离线测试。
+- 余额查询、强制刷新、详情面板及页脚行为保持不变，无新增运行时依赖。
+
 ## 功能特性
 
 - **页脚常驻状态**：显示 `🐳 DeepSeek 余额：¥110.00`，并按可用性着色（可用 / 不可用 / 未配置）。
@@ -19,9 +26,12 @@ deepseek-balance/
 ├── src/
 │   └── balance.ts               # 纯逻辑：刷新策略与状态文案（零外部依赖）
 ├── scripts/
-│   └── sync-autoload.mjs        # 显式生成自包含副本；默认写入 autoload
+│   └── sync-autoload.ts         # 显式生成自包含副本；默认写入 autoload
 ├── tests/
-│   └── deepseek-balance.test.mjs
+│   ├── deepseek-balance.test.ts
+│   └── sync-autoload.test.ts    # 临时目录中的同步脚本测试
+├── tsconfig.json                # 严格类型检查，不生成 JS
+├── package-lock.json            # 仓库开发依赖锁定
 ├── .env.example                 # DEEPSEEK_API_KEY 占位示例
 ├── .gitignore
 ├── LICENSE
@@ -30,7 +40,7 @@ deepseek-balance/
 
 ## 安装
 
-需要 Node.js >=22.19 和提供 `modelRegistry.getApiKeyForProvider()` 的 pi；已验证的宿主版本为 **1.0.4**。无需额外安装运行时或测试依赖，pi 提供宿主包。
+需要 Node.js >=22.19 和提供 `modelRegistry.getApiKeyForProvider()` 的 pi；已验证的宿主版本为 **1.0.4**。运行时与离线测试无需额外安装依赖，pi 提供宿主包。项目自维护代码统一为 TypeScript，由 Node 原生运行；开发类型检查需安装开发依赖。
 
 ### 方式一：本地路径（开发 / 试用）
 
@@ -117,8 +127,18 @@ pi --offline -ne -e .
 在项目根目录运行刷新策略的单元测试（注入 fetch 与合成凭据，不发起真实网络请求）：
 
 ```bash
-npm test
+npm test  # 原生运行 tests/*.test.ts，无需安装额外测试依赖
+
+# 仅安装本项目开发依赖，不执行依赖安装脚本、不修改全局 pi
+npm ci --ignore-scripts --no-audit --no-fund
+# 解包目录没有 package-lock.json 时，改用 npm install --ignore-scripts --no-audit --no-fund
+npm run typecheck  # 严格检查入口、核心、同步脚本和测试，不生成 JS
+npm run check      # 类型检查 + 全部离线测试
 ```
+
+类型检查使用 TypeScript、Node 类型及仅供开发的 pi 1.0.4 宿主包；运行时仍由 pi 提供宿主包，不将其加入运行时依赖或捆绑进扩展。`tsconfig.json` 开启严格检查、未使用声明检查及可擦除语法限制；Node 原生运行只擦除类型，不能代替类型检查。
+
+同步脚本测试覆盖指定输出及默认输出，均使用临时目录和临时 HOME，不写入真实 Pi 自加载目录、不查询凭据或余额。
 
 检查离线启动选项，或隔离试用本包的 HUD 和命令：
 
@@ -143,7 +163,7 @@ pi --offline -ne -e .
 
 ```bash
 npm pack --offline --ignore-scripts --pack-destination ..
-# 上一级目录生成 deepseek-balance-0.1.0.tgz，不安装插件、不发布 npm
+# 上一级目录生成 deepseek-balance-0.1.1.tgz，不安装插件、不发布 npm
 ```
 
 上传 GitHub 时使用本项目目录的内容，让 `package.json` 位于仓库根目录；不要把整个父目录、`.tgz`、凭据或本机配置上传。源码、测试、README、许可证、空值 `.env.example` 和 `.gitignore` 均可保留。包清单使用精确文件白名单，不需要 `node_modules/`；压缩包解开后也可直接运行 `npm test` 和 `pi -ne -e .`。

@@ -8,7 +8,7 @@
  *
  * Deliberately dependency-free (no imports, no `node:` builtins) so the same
  * file can be unit-tested under `node --test` and inlined into the deployed
- * autoload bundle by scripts/sync-autoload.mjs.
+ * autoload bundle by scripts/sync-autoload.ts.
  */
 
 export const PROVIDER = "deepseek";

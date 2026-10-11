@@ -4,27 +4,44 @@ import {
 	API_URL, BalanceController, POLL_MS, THROTTLE_MS, TIMEOUT_MS,
 	detailLines, isOffline, parseBalance, parseRetryAfter, statusLine, summaryLine,
 } from "../src/balance.ts";
+import type { BalanceSnapshot, BalanceState, ControllerOptions } from "../src/balance.ts";
 
 // Tripwire: tests must never fall through to a real network request.
 globalThis.fetch = async () => { throw new Error("Unexpected live fetch in test"); };
 
 const NOW = Date.UTC(2026, 9, 7, 12, 0, 0);
-const tick = () => new Promise((resolve) => setImmediate(resolve));
+const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
+function present<T>(value: T | null | undefined): T {
+	assert.ok(value != null, "Expected test data to be present");
+	return value;
+}
+const snapshot = (state: BalanceState): BalanceSnapshot => present(state.snapshot);
 
 const PAYLOAD = {
 	is_available: true,
 	balance_infos: [{ currency: "CNY", total_balance: "110.00", granted_balance: "10.00", topped_up_balance: "100.00" }],
 };
 
-function jsonResponse(body, status = 200, headers = {}) {
+function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = {}) {
 	return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } });
 }
 
+interface RecordedRequest {
+	url: Parameters<typeof globalThis.fetch>[0];
+	init: Parameters<typeof globalThis.fetch>[1];
+}
+interface HarnessOptions {
+	resolveAuth?: ControllerOptions["resolveAuth"];
+	respond?: (count: number, ...request: Parameters<typeof globalThis.fetch>) => ReturnType<typeof globalThis.fetch>;
+	offline?: boolean;
+	timeoutSignal?: ControllerOptions["timeoutSignal"];
+}
+
 /** Controller with an injectable clock/transport and a recorded fetch call log. */
-function harness(options = {}) {
+function harness(options: HarnessOptions = {}) {
 	const clock = { t: NOW };
-	const calls = [];
-	const states = [];
+	const calls: RecordedRequest[] = [];
+	const states: BalanceState[] = [];
 	const controller = new BalanceController({
 		resolveAuth: options.resolveAuth ?? (async () => "sk-test"),
 		now: () => clock.t,
@@ -40,7 +57,7 @@ function harness(options = {}) {
 		controller,
 		calls,
 		states,
-		advance: (ms) => { clock.t += ms; },
+		advance: (ms: number) => { clock.t += ms; },
 		get now() { return clock.t; },
 	};
 }
@@ -60,8 +77,8 @@ test("statusLine shows loading with the previous value and the accent color", as
 });
 
 test("stale marker wins over the loading marker", async () => {
-	let release;
-	const gate = new Promise((resolve) => { release = resolve; });
+	let release!: () => void;
+	const gate = new Promise<void>((resolve) => { release = resolve; });
 	const h = harness({
 		respond: (n) => n === 1 ? Promise.resolve(jsonResponse(PAYLOAD))
 			: n === 2 ? Promise.resolve(jsonResponse({}, 500))
@@ -113,8 +130,8 @@ test("force bypasses the throttle but never the rate-limit cooldown", async () =
 });
 
 test("concurrent refreshes share a single in-flight request", async () => {
-	let release;
-	const gate = new Promise((resolve) => { release = resolve; });
+	let release!: () => void;
+	const gate = new Promise<void>((resolve) => { release = resolve; });
 	const h = harness({ respond: () => gate.then(() => jsonResponse(PAYLOAD)) });
 	const first = h.controller.refresh(true);
 	const second = h.controller.refresh(true);
@@ -149,10 +166,10 @@ test("an out-of-range Retry-After falls back to the backoff window", async () =>
 
 test("failures back off 60s, 120s, 240s and cap at 300s", async () => {
 	const h = harness({ respond: () => Promise.resolve(jsonResponse({}, 500)) });
-	const observed = [];
+	const observed: number[] = [];
 	for (let attempt = 0; attempt < 5; attempt++) {
 		await h.controller.refresh(true);
-		observed.push(h.controller.getState().retryAt - h.now);
+		observed.push(present(h.controller.getState().retryAt) - h.now);
 		h.advance(1_000);
 	}
 	assert.deepEqual(observed, [60_000, 120_000, 240_000, 300_000, 300_000]);
@@ -162,7 +179,7 @@ test("a success resets the failure backoff", async () => {
 	let fail = true;
 	const h = harness({ respond: () => Promise.resolve(fail ? jsonResponse({}, 500) : jsonResponse(PAYLOAD)) });
 	await h.controller.refresh(true);
-	assert.equal(h.controller.getState().retryAt - h.now, 60_000);
+	assert.equal(present(h.controller.getState().retryAt) - h.now, 60_000);
 
 	fail = false;
 	await h.controller.refresh(true);
@@ -175,11 +192,11 @@ test("a success resets the failure backoff", async () => {
 	fail = true;
 	h.advance(THROTTLE_MS + 1);
 	await h.controller.refresh(true);
-	assert.equal(h.controller.getState().retryAt - h.now, 60_000);
+	assert.equal(present(h.controller.getState().retryAt) - h.now, 60_000);
 });
 
 test("missing credentials park in not_configured without entering backoff", async () => {
-	let key;
+	let key: string | undefined;
 	const h = harness({ resolveAuth: async () => key });
 	await h.controller.refresh(true);
 	let state = h.controller.getState();
@@ -199,7 +216,7 @@ test("missing credentials park in not_configured without entering backoff", asyn
 test("HTTP 401 clears the snapshot and reports an auth error", async () => {
 	const h = harness({ respond: (n) => Promise.resolve(n === 1 ? jsonResponse(PAYLOAD) : jsonResponse({}, 401)) });
 	await h.controller.refresh(true);
-	assert.equal(h.controller.getState().snapshot.isAvailable, true);
+	assert.equal(snapshot(h.controller.getState()).isAvailable, true);
 
 	h.advance(THROTTLE_MS + 1);
 	await h.controller.refresh();
@@ -211,8 +228,8 @@ test("HTTP 401 clears the snapshot and reports an auth error", async () => {
 
 test("a changed credential discards the previous snapshot", async () => {
 	let key = "sk-one";
-	let release;
-	const gate = new Promise((resolve) => { release = resolve; });
+	let release!: () => void;
+	const gate = new Promise<void>((resolve) => { release = resolve; });
 	const h = harness({
 		resolveAuth: async () => key,
 		respond: (n) => n === 1 ? Promise.resolve(jsonResponse(PAYLOAD)) : gate.then(() => jsonResponse(PAYLOAD)),
@@ -239,7 +256,7 @@ test("a hung request is classified as a timeout", async () => {
 	await promise;
 	const state = h.controller.getState();
 	assert.equal(state.phase, "timeout");
-	assert.equal(state.error.kind, "timeout");
+	assert.equal(present(state.error).kind, "timeout");
 	assert.match(detailLines(state, h.now).join("\n"), /超时/);
 });
 
@@ -265,17 +282,17 @@ test("getState returns a detached copy of the snapshot", async () => {
 	const h = harness();
 	await h.controller.refresh(true);
 	const copy = h.controller.getState();
-	copy.snapshot.infos[0].currency = "XXX";
-	copy.snapshot.isAvailable = false;
+	snapshot(copy).infos[0].currency = "XXX";
+	snapshot(copy).isAvailable = false;
 	copy.error = { kind: "network" };
-	assert.equal(h.controller.getState().snapshot.infos[0].currency, "CNY");
-	assert.equal(h.controller.getState().snapshot.isAvailable, true);
+	assert.equal(snapshot(h.controller.getState()).infos[0].currency, "CNY");
+	assert.equal(snapshot(h.controller.getState()).isAvailable, true);
 	assert.equal(h.controller.getState().error, null);
 });
 
 test("dispose aborts the request and ignores a late response", async () => {
-	let release;
-	const gate = new Promise((resolve) => { release = resolve; });
+	let release!: () => void;
+	const gate = new Promise<void>((resolve) => { release = resolve; });
 	const h = harness({ respond: () => gate.then(() => jsonResponse(PAYLOAD)) });
 	const promise = h.controller.refresh(true);
 	await tick();
