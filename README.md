@@ -1,5 +1,7 @@
 # deepseek-balance
 
+[简体中文](README.md) | [English](README.en.md)
+
 > 一个 [pi](https://pi.dev) 扩展：在页脚状态栏实时显示 DeepSeek 账户余额，并提供 `/deepseek-balance` 命令查看详情面板。
 
 ## v0.1.1 更新
@@ -35,7 +37,8 @@ deepseek-balance/
 ├── .env.example                 # DEEPSEEK_API_KEY 占位示例
 ├── .gitignore
 ├── LICENSE
-└── README.md
+├── README.md
+└── README.en.md
 ```
 
 ## 安装

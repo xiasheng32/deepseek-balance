@@ -30,6 +30,7 @@
     "tsconfig.json",
     ".env.example",
     "README.md",
+    "README.en.md",
     "LICENSE"
   ],
   "pi": {
