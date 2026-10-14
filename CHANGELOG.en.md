@@ -1,0 +1,34 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+Versions follow [Semantic Versioning](https://semver.org/); dates are release dates.
+
+## [0.1.2] - 2026-10-15
+
+### Added
+- Added `CHANGELOG.md` and `CHANGELOG.en.md` covering the full history since v0.1.0.
+- Added the English document `README.en.md`; line 2 of both READMEs provides the language switch links.
+
+### Changed
+- Both READMEs now follow the standard section order (Features / Installation / Usage / Configuration / Development and testing / Project structure / Version history / License); per-version update notes moved into this file.
+
+## [0.1.1] - 2026-10-11
+
+### Added
+- Added `npm run typecheck` for strict type checking and `npm run check` for combined validation.
+- Added the strict `tsconfig.json` (unused-declaration checks, erasable-syntax restrictions) and the locked development dependencies in `package-lock.json`.
+- Added 2 synchronization tests using temporary directories and a temporary HOME, for 28 offline tests in total.
+
+### Changed
+- All project-maintained code is TypeScript. Tests and the synchronization script run natively in Node without an extra TypeScript runner or compiled artifacts.
+- Balance queries, forced refreshes, the detail panel, and footer behavior are unchanged. No new runtime dependencies.
+
+## [0.1.0] - 2026-10-07
+
+### Added
+- First release: a persistent footer status showing the DeepSeek account balance, colored by availability.
+- The `/deepseek-balance` command forces a refresh and opens a panel showing the total, granted, and topped-up balance for each currency, plus account status.
+- Refresh policy: query at startup, poll every 60 seconds, throttle to 30 seconds after the agent settles, exponential backoff and 429 cooldown, 10-second request timeout.
+- Credentials are resolved through pi's model registry; the repository contains no hardcoded keys.
+- The `npm run sync-autoload` script generates a self-contained autoload copy.
+- 26 offline unit tests.

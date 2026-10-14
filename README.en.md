@@ -1,15 +1,7 @@
 # deepseek-balance
-
 [简体中文](README.md) | [English](README.en.md)
 
 > A [pi](https://pi.dev) extension that displays your DeepSeek account balance in the footer and provides a `/deepseek-balance` command for a detailed balance panel.
-
-## What's new in v0.1.1
-
-- All project-maintained code is TypeScript. Tests and the synchronization script run natively in Node without an extra TypeScript runner or compiled artifacts.
-- Added strict type checking with `npm run typecheck`, combined validation with `npm run check`, and locked development dependencies.
-- Retained the original 26 tests and added 2 synchronization tests using temporary directories, for 28 offline tests in total.
-- Balance queries, forced refreshes, the detail panel, and footer behavior are unchanged. No new runtime dependencies.
 
 ## Features
 
@@ -17,29 +9,6 @@
 - **`/deepseek-balance` command:** forces a refresh and opens a panel showing the total, granted, and topped-up balance for each currency, plus account status.
 - **Automatic refresh:** queries at session startup, polls every 60 seconds, and attempts a refresh after the agent settles with a 30-second throttle. Failures use exponential backoff; each request has a 10-second timeout.
 - **No hardcoded keys:** credentials come from pi's model registry. The repository contains no API keys.
-
-## Project structure
-
-```text
-deepseek-balance/
-├── package.json                 # pi package manifest (keyword: pi-package)
-├── extensions/
-│   └── deepseek-balance.ts      # pi events, command, and detail panel
-├── src/
-│   └── balance.ts               # refresh policy and status text; no external dependencies
-├── scripts/
-│   └── sync-autoload.ts         # explicitly generates a self-contained autoload copy
-├── tests/
-│   ├── deepseek-balance.test.ts
-│   └── sync-autoload.test.ts    # synchronization tests in temporary directories
-├── tsconfig.json                # strict type checking; no JavaScript output
-├── package-lock.json            # locked development dependencies
-├── .env.example                 # empty DEEPSEEK_API_KEY example
-├── .gitignore
-├── LICENSE
-├── README.md
-└── README.en.md
-```
 
 ## Installation
 
@@ -86,29 +55,13 @@ npm run sync-autoload -- /tmp/deepseek-balance.ts
 
 **Enable either the installed package or the standalone autoload copy, never both.** Loading both may register duplicate commands, statuses, and queries. If a standalone copy exists, disable the old source with `pi config`, or back it up and move it out of the autoload directory. The trial commands use `-ne` to isolate other extensions. The synchronization script only updates the selected output file, not other extensions or configuration.
 
-## Credentials
-
-pi's model registry resolves credentials. The extension does not read `auth.json` directly or save its own API key. Usually, choose one of these methods:
-
-1. Run `/login deepseek` in pi and let pi store and manage the credentials.
-2. Export the environment variable in the shell that starts pi, replacing the placeholder:
-
-```bash
-export DEEPSEEK_API_KEY='YOUR_DEEPSEEK_API_KEY'
-pi
-```
-
-`.env.example` only documents the variable name with an empty value. **Neither pi nor this extension automatically loads the project's `.env` file.** Copying the example does not configure credentials. If you use `.env`, have your shell or another tool export it before starting pi.
-
-> Do not commit real keys, `auth.json`, or local configuration. `.env` is ignored by Git, and the distributed example remains empty.
-
 ## Usage
 
 - Start `pi` to see the DeepSeek balance in the footer.
 - Run `/deepseek-balance` to force a refresh and open the detail panel. Close it with `Enter`, `Esc`, or `q`. Scroll overflowing content with `↑` / `↓`; use `Home` / `End` to jump to the beginning or end.
 - Without credentials, the footer shows `🐳 DeepSeek 未配置` (not configured), and the command reports the missing configuration.
 
-## Refresh policy and status
+### Refresh policy and status
 
 The refresh policy follows `codex-limit`, but this package runs independently and does not depend on a neighboring project.
 
@@ -127,7 +80,29 @@ pi --offline -ne -e .
 # Or: PI_OFFLINE=1 pi -ne -e .
 ```
 
-## Development and tests
+### Security and API limitations
+
+- Sends GET requests only to the fixed endpoint `https://api.deepseek.com/user/balance`, rejecting redirects. Queries do not spend the balance.
+- Does not log API keys, raw authentication errors, or complete responses. Network and data failures display sanitized status messages.
+- Extensions have the same system permissions as pi. Load trusted source code only. Real account and network access are outside the offline tests.
+
+## Configuration
+
+pi's model registry resolves credentials. The extension does not read `auth.json` directly or save its own API key. Usually, choose one of these methods:
+
+1. Run `/login deepseek` in pi and let pi store and manage the credentials.
+2. Export the environment variable in the shell that starts pi, replacing the placeholder:
+
+```bash
+export DEEPSEEK_API_KEY='YOUR_DEEPSEEK_API_KEY'
+pi
+```
+
+`.env.example` only documents the variable name with an empty value. **Neither pi nor this extension automatically loads the project's `.env` file.** Copying the example does not configure credentials. If you use `.env`, have your shell or another tool export it before starting pi.
+
+> Do not commit real keys, `auth.json`, or local configuration. `.env` is ignored by Git, and the distributed example remains empty.
+
+## Development and testing
 
 Run the refresh-policy tests from the project root. They inject fetch and synthetic credentials without making real network requests.
 
@@ -158,23 +133,46 @@ The help command alone cannot prove that the extension loaded successfully. In a
 
 After editing `src/balance.ts` or `extensions/deepseek-balance.ts`, package installations only need `/reload`. Standalone deployments require an explicit `npm run sync-autoload`.
 
-## Security and API limitations
-
-- Sends GET requests only to the fixed endpoint `https://api.deepseek.com/user/balance`, rejecting redirects. Queries do not spend the balance.
-- Does not log API keys, raw authentication errors, or complete responses. Network and data failures display sanitized status messages.
-- Extensions have the same system permissions as pi. Load trusted source code only. Real account and network access are outside the offline tests.
-
-## Local packaging and GitHub uploads
+### Local packaging and GitHub uploads
 
 Run from the project root:
 
 ```bash
 npm pack --offline --ignore-scripts --pack-destination ..
-# Creates deepseek-balance-0.1.1.tgz in the parent directory;
+# Creates deepseek-balance-0.1.2.tgz in the parent directory;
 # does not install the extension or publish to npm
 ```
 
 Upload this project's contents with `package.json` at the repository root. Do not upload the entire parent directory, `.tgz` files, credentials, or local configuration. Keep the source, tests, both READMEs, license, empty `.env.example`, and `.gitignore`. The manifest uses an explicit file allowlist; `node_modules/` is unnecessary. After extracting the package, you can run `npm test` and `pi -ne -e .` directly.
+
+## Project structure
+
+```text
+deepseek-balance/
+├── package.json                 # pi package manifest (keyword: pi-package)
+├── extensions/
+│   └── deepseek-balance.ts      # pi events, command, and detail panel
+├── src/
+│   └── balance.ts               # refresh policy and status text; no external dependencies
+├── scripts/
+│   └── sync-autoload.ts         # explicitly generates a self-contained autoload copy
+├── tests/
+│   ├── deepseek-balance.test.ts
+│   └── sync-autoload.test.ts    # synchronization tests in temporary directories
+├── tsconfig.json                # strict type checking; no JavaScript output
+├── package-lock.json            # locked development dependencies
+├── .env.example                 # empty DEEPSEEK_API_KEY example
+├── .gitignore
+├── LICENSE
+├── README.md
+├── README.en.md
+├── CHANGELOG.md
+└── CHANGELOG.en.md
+```
+
+## Version history
+
+Current version **v0.1.2**. See [CHANGELOG.md](CHANGELOG.en.md) for the full history.
 
 ## License
 

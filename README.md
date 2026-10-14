@@ -1,45 +1,14 @@
 # deepseek-balance
-
 [简体中文](README.md) | [English](README.en.md)
 
 > 一个 [pi](https://pi.dev) 扩展：在页脚状态栏实时显示 DeepSeek 账户余额，并提供 `/deepseek-balance` 命令查看详情面板。
 
-## v0.1.1 更新
-
-- 自维护代码统一为 TypeScript：测试和同步脚本使用 Node 原生运行，不引入额外 TS 运行器或编译产物。
-- 新增严格类型检查 `npm run typecheck`、综合验证 `npm run check` 及开发依赖锁定。
-- 保留原有 26 项用例，新增 2 项临时目录中的同步脚本测试，共 28 项离线测试。
-- 余额查询、强制刷新、详情面板及页脚行为保持不变，无新增运行时依赖。
-
 ## 功能特性
 
-- **页脚常驻状态**：显示 `🐳 DeepSeek 余额：¥110.00`，并按可用性着色（可用 / 不可用 / 未配置）。
+- **页脚常驻状态**：显示 `🐳 DeepSeek 余额：¥110.00`，按可用性着色（可用 / 不可用 / 未配置）。
 - **`/deepseek-balance` 命令**：强制刷新并弹出详情面板，展示每个币种的**总余额、赠送余额、充值余额**与账户状态。
 - **自动刷新**：会话启动时查询，之后每 60 秒轮询并在每次 Agent 结束后按 30 秒节流刷新；失败按指数退避重试，单次请求 10 秒超时。
 - **无硬编码密钥**：凭据统一从 pi 的模型注册表读取，仓库中不含任何 key。
-
-## 目录结构
-
-```
-deepseek-balance/
-├── package.json                 # pi 包清单（keywords: pi-package）
-├── extensions/
-│   └── deepseek-balance.ts      # pi 接线：事件、命令、详情面板
-├── src/
-│   └── balance.ts               # 纯逻辑：刷新策略与状态文案（零外部依赖）
-├── scripts/
-│   └── sync-autoload.ts         # 显式生成自包含副本；默认写入 autoload
-├── tests/
-│   ├── deepseek-balance.test.ts
-│   └── sync-autoload.test.ts    # 临时目录中的同步脚本测试
-├── tsconfig.json                # 严格类型检查，不生成 JS
-├── package-lock.json            # 仓库开发依赖锁定
-├── .env.example                 # DEEPSEEK_API_KEY 占位示例
-├── .gitignore
-├── LICENSE
-├── README.md
-└── README.en.md
-```
 
 ## 安装
 
@@ -84,29 +53,13 @@ npm run sync-autoload -- /tmp/deepseek-balance.ts
 
 **包安装与独立 autoload 副本只能择一启用**，否则可能重复注册命令、状态栏与查询任务。已存在独立副本时，先通过 `pi config` 禁用旧来源，或备份后移出 autoload 目录；试用命令的 `-ne` 会隔离其他扩展。同步脚本只更新指定输出文件，不修改其他扩展或配置。
 
-## 凭据配置
-
-凭据统一由 pi 的模型注册表解析，插件不直接读取 `auth.json`，也不自行保存 API Key。通常选择以下一种方式：
-
-1. 在 pi 中执行 `/login deepseek`，由 pi 保存和管理凭据；
-2. 在启动 pi 的 shell 中导出环境变量（替换占位值）：
-
-```bash
-export DEEPSEEK_API_KEY='YOUR_DEEPSEEK_API_KEY'
-pi
-```
-
-`.env.example` 仅提供变量名称和空值示例。**pi 与本插件不会自动加载项目的 `.env`**；仅复制文件不会配置凭据。如自行使用 `.env`，需在启动 pi 前由 shell/工具将其导出到环境。
-
-> 请勿把真实密钥、`auth.json` 或本机配置提交到仓库。`.env` 已在 `.gitignore` 中忽略，分发示例保持空值。
-
 ## 使用
 
 - 启动 `pi` 后，页脚会显示 DeepSeek 余额。
 - 输入 `/deepseek-balance` 强制刷新并打开详情面板，`Enter` / `Esc`（或 `q`）关闭；内容超出面板时用 `↑` / `↓` 滚动，`Home` / `End` 跳至首尾。
 - 未配置凭据时页脚显示 `🐳 DeepSeek 未配置`，`/deepseek-balance` 也会提示未配置。
 
-## 刷新与状态
+### 刷新与状态
 
 刷新策略与 `codex-limit` 保持一致，但本包独立运行，不依赖相邻项目：
 
@@ -124,6 +77,28 @@ pi
 pi --offline -ne -e .
 # 或 PI_OFFLINE=1 pi -ne -e .
 ```
+
+### 安全与接口限制
+
+- 仅向固定的 `https://api.deepseek.com/user/balance` 发送 GET，拒绝重定向；不会消费余额。
+- 不记录 API Key、认证异常原文或完整响应；网络/数据失败只显示脱敏状态。
+- 扩展与 pi 拥有相同的系统权限，请只加载可信源码。真实账户与网络访问不属于离线测试。
+
+## 配置
+
+凭据统一由 pi 的模型注册表解析，插件不直接读取 `auth.json`，也不自行保存 API Key。通常选择以下一种方式：
+
+1. 在 pi 中执行 `/login deepseek`，由 pi 保存和管理凭据；
+2. 在启动 pi 的 shell 中导出环境变量（替换占位值）：
+
+```bash
+export DEEPSEEK_API_KEY='YOUR_DEEPSEEK_API_KEY'
+pi
+```
+
+`.env.example` 仅提供变量名称和空值示例。**pi 与本插件不会自动加载项目的 `.env`**；仅复制文件不会配置凭据。如自行使用 `.env`，需在启动 pi 前由 shell/工具将其导出到环境。
+
+> 请勿把真实密钥、`auth.json` 或本机配置提交到仓库。`.env` 已在 `.gitignore` 中忽略，分发示例保持空值。
 
 ## 开发与测试
 
@@ -154,22 +129,45 @@ pi --offline -ne -e .
 
 修改 `src/balance.ts` 或 `extensions/deepseek-balance.ts` 后，包方式加载只需 `/reload`；单文件部署才需要显式运行 `npm run sync-autoload`。
 
-## 安全与接口限制
-
-- 仅向固定的 `https://api.deepseek.com/user/balance` 发送 GET，拒绝重定向；不会消费余额。
-- 不记录 API Key、认证异常原文或完整响应；网络/数据失败只显示脱敏状态。
-- 扩展与 pi 拥有相同的系统权限，请只加载可信源码。真实账户与网络访问不属于离线测试。
-
-## 本地打包与上传 GitHub
+### 本地打包与上传 GitHub
 
 在项目根目录运行：
 
 ```bash
 npm pack --offline --ignore-scripts --pack-destination ..
-# 上一级目录生成 deepseek-balance-0.1.1.tgz，不安装插件、不发布 npm
+# 上一级目录生成 deepseek-balance-0.1.2.tgz，不安装插件、不发布 npm
 ```
 
 上传 GitHub 时使用本项目目录的内容，让 `package.json` 位于仓库根目录；不要把整个父目录、`.tgz`、凭据或本机配置上传。源码、测试、README、许可证、空值 `.env.example` 和 `.gitignore` 均可保留。包清单使用精确文件白名单，不需要 `node_modules/`；压缩包解开后也可直接运行 `npm test` 和 `pi -ne -e .`。
+
+## 文件结构
+
+```text
+deepseek-balance/
+├── package.json                 # pi 包清单（keywords: pi-package）
+├── extensions/
+│   └── deepseek-balance.ts      # pi 接线：事件、命令、详情面板
+├── src/
+│   └── balance.ts               # 纯逻辑：刷新策略与状态文案（零外部依赖）
+├── scripts/
+│   └── sync-autoload.ts         # 显式生成自包含副本；默认写入 autoload
+├── tests/
+│   ├── deepseek-balance.test.ts
+│   └── sync-autoload.test.ts    # 临时目录中的同步脚本测试
+├── tsconfig.json                # 严格类型检查，不生成 JS
+├── package-lock.json            # 仓库开发依赖锁定
+├── .env.example                 # DEEPSEEK_API_KEY 占位示例
+├── .gitignore
+├── LICENSE
+├── README.md
+├── README.en.md
+├── CHANGELOG.md
+└── CHANGELOG.en.md
+```
+
+## 版本更新
+
+当前版本 **v0.1.2**。完整更新记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 许可
 
