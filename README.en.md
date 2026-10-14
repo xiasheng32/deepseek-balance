@@ -1,4 +1,5 @@
 # deepseek-balance
+
 [简体中文](README.md) | [English](README.en.md)
 
 > A [pi](https://pi.dev) extension that displays your DeepSeek account balance in the footer and provides a `/deepseek-balance` command for a detailed balance panel.
