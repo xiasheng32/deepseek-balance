@@ -1,15 +1,15 @@
 /**
- * DeepSeek Balance HUD.
+ * Pi DeepSeek balance HUD.
  *
  * Wires the shared-codex-style refresh controller (`../src/balance.ts`) into pi:
- * footer status line, `/deepseek-balance` command and a live detail panel.
+ * footer status line, `/pi-deepseek` command and a live detail panel.
  *
- * - Status: ctx.ui.setStatus("deepseek-balance", "🐳 DeepSeek 余额：¥110.00")
+ * - Status: ctx.ui.setStatus("pi-deepseek", "🐳 DeepSeek 余额：¥110.00")
  * - Refresh: session start (immediate) + 60s poll + agent_settled (30s throttle)
  * - API: GET https://api.deepseek.com/user/balance (Bearer auth)
  *
  * Deployment: `npm run sync-autoload` inlines ../src/balance.ts into
- * ~/.pi/agent/extensions/deepseek-balance.ts. This file cannot be copied there
+ * ~/.pi/agent/extensions/pi-deepseek.ts. This file cannot be copied there
  * verbatim because of the relative import.
  */
 
@@ -19,7 +19,7 @@ import { matchesKey, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@ea
 import { BalanceController, POLL_MS, PROVIDER, detailLines, isOffline, statusLine, summaryLine } from "../src/balance.ts";
 import type { BalanceState } from "../src/balance.ts";
 
-const STATUS_KEY = "deepseek-balance";
+const STATUS_KEY = "pi-deepseek";
 
 export class BalancePanel {
 	private readonly tui: TUI;
@@ -87,7 +87,7 @@ export class BalancePanel {
 	}
 }
 
-export default function deepseekBalance(pi: ExtensionAPI): void {
+export default function piDeepseek(pi: ExtensionAPI): void {
 	// State is factory-local: reloads and different sessions cannot share requests.
 	let controller: BalanceController | null = null;
 	let timer: ReturnType<typeof setInterval> | undefined;
@@ -141,7 +141,7 @@ export default function deepseekBalance(pi: ExtensionAPI): void {
 
 	pi.on("session_shutdown", (_event, ctx) => stop(ctx));
 
-	pi.registerCommand("deepseek-balance", {
+	pi.registerCommand("pi-deepseek", {
 		description: "查看 DeepSeek 账户余额；强制刷新并打开详情面板",
 		handler: async (_args, ctx) => {
 			if (!ctx.hasUI) return;

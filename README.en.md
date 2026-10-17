@@ -1,13 +1,13 @@
-# deepseek-balance
+# pi-deepseek
 
 [简体中文](README.md) | [English](README.en.md)
 
-> A [pi](https://pi.dev) extension that displays your DeepSeek account balance in the footer and provides a `/deepseek-balance` command for a detailed balance panel.
+> A [pi](https://pi.dev) extension that displays your DeepSeek account balance in the footer and provides a `/pi-deepseek` command for a detailed balance panel.
 
 ## Features
 
 - **Persistent footer status:** displays `🐳 DeepSeek 余额：¥110.00`, with colors indicating account availability or missing credentials. The extension's UI labels remain in Chinese.
-- **`/deepseek-balance` command:** forces a refresh and opens a panel showing the total, granted, and topped-up balance for each currency, plus account status.
+- **`/pi-deepseek` command:** forces a refresh and opens a panel showing the total, granted, and topped-up balance for each currency, plus account status.
 - **Automatic refresh:** queries at session startup, polls every 60 seconds, and attempts a refresh after the agent settles with a 30-second throttle. Failures use exponential backoff; each request has a 10-second timeout.
 - **No hardcoded keys:** credentials come from pi's model registry. The repository contains no API keys.
 
@@ -20,7 +20,7 @@ Requires Node.js >=22.19 and a pi host exposing `modelRegistry.getApiKeyForProvi
 After cloning, run these commands from the project root containing `package.json` (or the `package/` directory after extracting a `.tgz`):
 
 ```bash
-cd deepseek-balance
+cd pi-deepseek
 
 # Offline trial for this run only: no other extensions, configuration writes,
 # credential resolution, or balance queries
@@ -38,33 +38,47 @@ Restart pi or run `/reload` in an existing session. Use `pi list` to see configu
 ### Option 2: Install from GitHub
 
 ```bash
-pi install git:github.com/xiasheng32/deepseek-balance
+pi install git:github.com/xiasheng32/pi-deepseek
+pi update git:github.com/xiasheng32/pi-deepseek  # Update an existing installation
 ```
 
 ### Option 3: Generate a standalone autoload file
 
-`extensions/deepseek-balance.ts` depends on `../src/balance.ts` and cannot be copied on its own. Explicitly generate a self-contained file from the project root:
+`extensions/pi-deepseek.ts` depends on `../src/balance.ts` and cannot be copied on its own. Explicitly generate a self-contained file from the project root:
 
 ```bash
 npm run sync-autoload
-# Overwrites ~/.pi/agent/extensions/deepseek-balance.ts by default;
+# Overwrites ~/.pi/agent/extensions/pi-deepseek.ts by default;
 # then run /reload in pi
 
 # Or generate a local file without modifying the active extension
-npm run sync-autoload -- /tmp/deepseek-balance.ts
+npm run sync-autoload -- /tmp/pi-deepseek.ts
 ```
 
 **Enable either the installed package or the standalone autoload copy, never both.** Loading both may register duplicate commands, statuses, and queries. If a standalone copy exists, disable the old source with `pi config`, or back it up and move it out of the autoload directory. The trial commands use `-ne` to isolate other extensions. The synchronization script only updates the selected output file, not other extensions or configuration.
 
+### Migrating from deepseek-balance (renamed in v0.1.3)
+
+- The package, command, and footer status key are now `pi-deepseek`. Use `/pi-deepseek` for details; the old `/deepseek-balance` command is no longer registered. Update `deepseek-balance` to `pi-deepseek` in custom footer settings such as `footerLine2Keys`.
+- For a GitHub installation, remove the old source before installing the renamed repository to avoid loading both:
+
+```bash
+pi remove git:github.com/xiasheng32/deepseek-balance
+pi install git:github.com/xiasheng32/pi-deepseek
+```
+
+- For standalone deployments, disable the old copy or back up and move `~/.pi/agent/extensions/deepseek-balance.ts` out of autoload before running `npm run sync-autoload` to generate `pi-deepseek.ts`. Do not enable both copies.
+- The repository is now `github.com/xiasheng32/pi-deepseek`; GitHub redirects the old URL. Existing clones can run `git remote set-url origin https://github.com/xiasheng32/pi-deepseek.git`. Pi still manages credentials, and `DEEPSEEK_API_KEY` and `/login deepseek` are unchanged. Restart pi or run `/reload` after migrating.
+
 ## Usage
 
 - Start `pi` to see the DeepSeek balance in the footer.
-- Run `/deepseek-balance` to force a refresh and open the detail panel. Close it with `Enter`, `Esc`, or `q`. Scroll overflowing content with `↑` / `↓`; use `Home` / `End` to jump to the beginning or end.
+- Run `/pi-deepseek` to force a refresh and open the detail panel. Close it with `Enter`, `Esc`, or `q`. Scroll overflowing content with `↑` / `↓`; use `Home` / `End` to jump to the beginning or end.
 - Without credentials, the footer shows `🐳 DeepSeek 未配置` (not configured), and the command reports the missing configuration.
 
 ### Refresh policy and status
 
-The refresh policy follows `codex-limit`, but this package runs independently and does not depend on a neighboring project.
+The refresh policy follows `pi-codex`, but this package runs independently and does not depend on a neighboring project.
 
 - Interactive startup queries without blocking, then polls every 60 seconds and attempts a refresh on `agent_settled`. Automatic requests are at least 30 seconds apart.
 - Only one refresh runs at a time; concurrent callers share the same Promise. Each request resolves credentials through pi again instead of caching the API key. Credential changes, HTTP 401/403, or logout clear old data.
@@ -130,9 +144,9 @@ pi --offline -ne -e . --help
 pi --offline -ne -e .
 ```
 
-The help command alone cannot prove that the extension loaded successfully. In an offline interactive trial, expect `🐳 DeepSeek 离线` (offline); `/deepseek-balance` should not query credentials or balances. Do not use `-p "ok"` for an offline check because it invokes a model.
+The help command alone cannot prove that the extension loaded successfully. In an offline interactive trial, expect `🐳 DeepSeek 离线` (offline); `/pi-deepseek` should not query credentials or balances. Do not use `-p "ok"` for an offline check because it invokes a model.
 
-After editing `src/balance.ts` or `extensions/deepseek-balance.ts`, package installations only need `/reload`. Standalone deployments require an explicit `npm run sync-autoload`.
+After editing `src/balance.ts` or `extensions/pi-deepseek.ts`, package installations only need `/reload`. Standalone deployments require an explicit `npm run sync-autoload`.
 
 ### Local packaging and GitHub uploads
 
@@ -140,7 +154,7 @@ Run from the project root:
 
 ```bash
 npm pack --offline --ignore-scripts --pack-destination ..
-# Creates deepseek-balance-0.1.2.tgz in the parent directory;
+# Creates pi-deepseek-0.1.3.tgz in the parent directory;
 # does not install the extension or publish to npm
 ```
 
@@ -149,16 +163,16 @@ Upload this project's contents with `package.json` at the repository root. Do no
 ## Project structure
 
 ```text
-deepseek-balance/
+pi-deepseek/
 ├── package.json                 # pi package manifest (keyword: pi-package)
 ├── extensions/
-│   └── deepseek-balance.ts      # pi events, command, and detail panel
+│   └── pi-deepseek.ts      # pi events, command, and detail panel
 ├── src/
 │   └── balance.ts               # refresh policy and status text; no external dependencies
 ├── scripts/
 │   └── sync-autoload.ts         # explicitly generates a self-contained autoload copy
 ├── tests/
-│   ├── deepseek-balance.test.ts
+│   ├── pi-deepseek.test.ts
 │   └── sync-autoload.test.ts    # synchronization tests in temporary directories
 ├── tsconfig.json                # strict type checking; no JavaScript output
 ├── package-lock.json            # locked development dependencies
@@ -173,7 +187,7 @@ deepseek-balance/
 
 ## Version history
 
-Current version **v0.1.2**. See [CHANGELOG.md](CHANGELOG.en.md) for the full history.
+Current version **v0.1.3**. See [CHANGELOG.en.md](CHANGELOG.en.md) for the full history.
 
 ## License
 

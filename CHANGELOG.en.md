@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/); dates are release dates.
 
+## [0.1.3] - 2026-10-17
+
+### Changed (rename migration)
+- Renamed the repository and package from `deepseek-balance` to `pi-deepseek`, updating package metadata, repository links, and install/update commands while retaining the root project layout.
+- Renamed `/deepseek-balance` to `/pi-deepseek` and the footer status key to `pi-deepseek`. The old command is no longer registered; custom footers must update their status key.
+- Renamed the entry, core test, and standalone deployment files to `pi-deepseek.ts` and `pi-deepseek.test.ts`; generated bundle headers now identify the repository rather than a local path.
+- Added migration instructions for GitHub sources, standalone copies, and footer settings in both READMEs; package and lockfile root versions are now 0.1.3. Balance queries, credential sources, refresh policy, and UI behavior are unchanged.
+
 ## [0.1.2] - 2026-10-15
 
 ### Added

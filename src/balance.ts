@@ -1,7 +1,7 @@
 /**
  * DeepSeek balance refresh policy.
  *
- * Ported from CLIProjects/codex-limit/src/quota.ts so both extensions share the
+ * Ported from xiasheng32/pi-codex/src/quota.ts so both extensions share the
  * same refresh scheme: controller-scoped state, guard ordering, per-request
  * timeout, exponential backoff, Retry-After cooldown, stale marking and a
  * phase-driven status line.

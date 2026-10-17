@@ -1,7 +1,7 @@
 {
-  "name": "deepseek-balance",
-  "version": "0.1.2",
-  "description": "Pi extension: 在页脚状态栏显示 DeepSeek 账户余额，并提供 /deepseek-balance 详情面板命令。",
+  "name": "pi-deepseek",
+  "version": "0.1.3",
+  "description": "Pi extension: 在页脚状态栏显示 DeepSeek 账户余额，并提供 /pi-deepseek 详情面板命令。",
   "keywords": [
     "pi-package",
     "pi-extension",
@@ -11,21 +11,21 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/xiasheng32/deepseek-balance.git"
+    "url": "https://github.com/xiasheng32/pi-deepseek.git"
   },
-  "homepage": "https://github.com/xiasheng32/deepseek-balance#readme",
+  "homepage": "https://github.com/xiasheng32/pi-deepseek#readme",
   "bugs": {
-    "url": "https://github.com/xiasheng32/deepseek-balance/issues"
+    "url": "https://github.com/xiasheng32/pi-deepseek/issues"
   },
   "type": "module",
   "engines": {
     "node": ">=22.19.0"
   },
   "files": [
-    "extensions/deepseek-balance.ts",
+    "extensions/pi-deepseek.ts",
     "src/balance.ts",
     "scripts/sync-autoload.ts",
-    "tests/deepseek-balance.test.ts",
+    "tests/pi-deepseek.test.ts",
     "tests/sync-autoload.test.ts",
     "tsconfig.json",
     ".env.example",
@@ -37,11 +37,11 @@
   ],
   "pi": {
     "extensions": [
-      "./extensions/deepseek-balance.ts"
+      "./extensions/pi-deepseek.ts"
     ]
   },
   "scripts": {
-    "test": "node --test tests/deepseek-balance.test.ts tests/sync-autoload.test.ts",
+    "test": "node --test tests/pi-deepseek.test.ts tests/sync-autoload.test.ts",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm test",
     "sync-autoload": "node scripts/sync-autoload.ts"
